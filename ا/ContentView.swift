@@ -1,61 +1,49 @@
-//
-//  ContentView.swift
-//  ا
-//
-//  Created by Sumayah Alshehri on 24/04/1446 AH.
-//
-
 import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
-
+    @State private var plants: [Plant] = []  // مصفوفة تخزين النباتات
+    
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
+        NavigationStack {
+            VStack {
+                Divider()
+                    .padding(.top, -80)
+                
+                Image("plant1") // تأكد من وجود الصورة في الأصول
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 280, height: 280, alignment: .center)
+                    .padding(.bottom, -20)
+                
+                Text("Start your plant journey!")
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .padding(.bottom, 10)
+                
+                Text("Now all your plants will be in one place and we will help you take care of them :) 🪴")
+                    .fontWeight(.regular)
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.gray)
+                    .padding(.horizontal, 30)
+                    .padding(.bottom, 40)
+                
+                NavigationLink(destination: PlantDetailsView(plants: $plants)) {
+                    Text("Set Plant Reminder")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.green)
+                        .cornerRadius(20)
+                        .padding(.horizontal, 30)
                 }
-                .onDelete(perform: deleteItems)
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
-        } detail: {
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
+            .navigationTitle("My Plants 🌱")
         }
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
 }
