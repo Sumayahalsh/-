@@ -10,52 +10,93 @@ import SwiftUI
 struct NewReminderSheet: View {
     @Environment(\.dismiss) var dismiss
     
-    @State private var plantName: String = ""
+    // Default plant name
+    @State private var plantName: String = "Pothos"
+    
     @State private var selectedRoom: String = "Bedroom"
     @State private var selectedLight: String = "Full Sun"
     @State private var selectedWaterAmount: String = "20-50 ml"
+    @State private var selectedWateringDays: String = "Every day" // Default watering frequency
     
     let rooms = ["Bedroom", "Bathroom", "Kitchen", "Living Room", "Balcony"]
     let lights = ["Full Sun", "Partial Sun", "Low Sun"]
     let waterAmounts = ["20-50 ml", "50-100 ml", "100-200 ml", "200-300 ml"]
+    let wateringDays = ["Every day", "Every 2 days", "Every 3 days", "Once a week", "Every 10 days", "Every 2 weeks"]
     
     var onSave: (Plant) -> Void
     
     var body: some View {
         NavigationStack {
             VStack(spacing: 20) {
-                TextField("Plant Name", text: $plantName)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding(.horizontal)
+                // Custom TextField with static label "Plant Name"
+                HStack {
+                    Text("Plant Name")
+                        .foregroundColor(.white)
+                        .font(.body)
+                    TextField("", text: $plantName) // Editable part for plant name
+                        .foregroundColor(.gray)
+                        .font(.body)
+                        .textFieldStyle(PlainTextFieldStyle()) // Remove default border
+                }
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .cornerRadius(10)
+                .padding(.horizontal)
+
+                // Combined Room and Light section in a single VStack container with reduced padding
+                VStack(spacing: 0) {
+                    PickerSection(title: "Room", selection: $selectedRoom, options: rooms, icon: "location.fill")
+                        .padding(.leading, 8)
+                    Divider()
+                    PickerSection(title: "Light", selection: $selectedLight, options: lights, icon: "sun.max.fill")
+                        .padding(.leading, 8)
+                }
+                .background(Color(.secondarySystemBackground))
+                .cornerRadius(10)
+                .padding(.horizontal, 16) // Reduced horizontal padding
                 
-                PickerSection(title: "Room", selection: $selectedRoom, options: rooms, icon: "location.fill")
-                PickerSection(title: "Light", selection: $selectedLight, options: lights, icon: "sun.max.fill")
-                PickerSection(title: "Water Amount", selection: $selectedWaterAmount, options: waterAmounts, icon: "drop.fill")
-                
+                // Combined Water Amount and Watering Days section in a single VStack container with reduced padding
+                VStack(spacing: 0) {
+                    PickerSection(title: "Water", selection: $selectedWaterAmount, options: waterAmounts, icon: "drop.fill")
+                        .padding(.leading, 8)
+                    Divider()
+                    PickerSection(title: "Watering Days", selection: $selectedWateringDays, options: wateringDays, icon: "drop.fill")
+                        .padding(.leading, 8)
+                }
+                .background(Color(.secondarySystemBackground))
+                .cornerRadius(10)
+                .padding(.horizontal, 16) // Reduced horizontal padding
+
                 Spacer()
             }
-            .navigationTitle("Set Reminder")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
                         dismiss()
                     }
-                    .foregroundColor(.green)
+                    .foregroundColor(.green1)
                 }
+                
+                ToolbarItem(placement: .principal) {
+                    Text("Set Reminder")
+                        .font(.headline)
+                        .foregroundColor(.gray)
+                }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
                         let newPlant = Plant(id: UUID(), name: plantName, room: selectedRoom, light: selectedLight, waterAmount: selectedWaterAmount)
                         onSave(newPlant)
                         dismiss()
                     }
-                    .foregroundColor(.green)
+                    .foregroundColor(.green1)
                 }
             }
         }
     }
 }
 
-// تعريف PickerSection
+// Definition of PickerSection with reduced padding
 struct PickerSection: View {
     let title: String
     @Binding var selection: String
@@ -75,11 +116,9 @@ struct PickerSection: View {
                 }
             }
             .pickerStyle(MenuPickerStyle())
+            .accentColor(.gray) // Change "green" to your preferred color
         }
-        .padding()
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(10)
-        .padding(.horizontal)
+        .padding(.vertical, 8) // Reduced vertical padding
     }
 }
 

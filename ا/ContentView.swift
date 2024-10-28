@@ -34,7 +34,7 @@ struct ContentView: View {
                         .foregroundColor(.white)
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(Color.green)
+                        .background(Color.green1)
                         .cornerRadius(20)
                         .padding(.horizontal, 30)
                 }

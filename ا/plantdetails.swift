@@ -1,18 +1,19 @@
 import SwiftUI
 
-// تعريف Plant
+// Plant structure definition
 struct Plant: Identifiable, Codable {
     var id: UUID
-    let name: String
-    let room: String
-    let light: String
-    let waterAmount: String
+    var name: String
+    var room: String
+    var light: String
+    var waterAmount: String
     var isWatered: Bool = false
 }
 
 struct PlantDetailsView: View {
     @Binding var plants: [Plant]
-    @State private var isSheetPresented = false
+    @State private var isAddingNewPlant = false
+    @State private var selectedPlant: Plant?
 
     private let plantsKey = "savedPlants"
 
@@ -23,9 +24,9 @@ struct PlantDetailsView: View {
     var body: some View {
         NavigationStack {
             if allPlantsWatered {
-                AllDoneView {
-                    isSheetPresented = true  // فتح ورقة إضافة تذكير جديد عند النقر على الزر
-                }
+                AllDoneView(onNewReminder: {
+                    isAddingNewPlant = true
+                })
             } else {
                 content
             }
@@ -33,11 +34,23 @@ struct PlantDetailsView: View {
         .onAppear {
             loadPlants()
         }
-        .sheet(isPresented: $isSheetPresented) {
-            NewReminderSheet { newPlant in
-                let plant = Plant(id: UUID(), name: newPlant.name, room: newPlant.room, light: newPlant.light, waterAmount: newPlant.waterAmount, isWatered: newPlant.isWatered)
-                plants.append(plant)
+        .sheet(isPresented: $isAddingNewPlant) {
+            EditPlantSheet(plant: Plant(id: UUID(), name: "", room: "Bedroom", light: "Full Sun", waterAmount: "20-50 ml")) { newPlant in
+                plants.append(newPlant)
                 savePlants()
+            } onDelete: {}
+        }
+        .sheet(item: $selectedPlant) { plant in
+            EditPlantSheet(plant: plant) { updatedPlant in
+                if let index = plants.firstIndex(where: { $0.id == updatedPlant.id }) {
+                    plants[index] = updatedPlant
+                    savePlants()
+                }
+            } onDelete: {
+                if let index = plants.firstIndex(where: { $0.id == plant.id }) {
+                    plants.remove(at: index)
+                    savePlants()
+                }
             }
         }
     }
@@ -91,6 +104,7 @@ struct PlantDetailsView: View {
                                 Image(systemName: "sun.max.fill")
                                     .foregroundColor(.yellow)
                                 Text(plant.light)
+                                    .foregroundColor(.yellow)
                                     .font(.subheadline)
                             }
                             .padding(6)
@@ -99,8 +113,9 @@ struct PlantDetailsView: View {
                             
                             HStack {
                                 Image(systemName: "drop.fill")
-                                    .foregroundColor(.teal)
+                                    .foregroundColor(.blue)
                                 Text(plant.waterAmount)
+                                    .foregroundColor(.blue)
                                     .font(.subheadline)
                             }
                             .padding(6)
@@ -110,6 +125,9 @@ struct PlantDetailsView: View {
                         .padding(.leading, 10)
                     }
                     .padding(.vertical, 5)
+                    .onTapGesture {
+                        selectedPlant = plant
+                    }
                 }
                 .onDelete(perform: deletePlant)
             }
@@ -118,7 +136,7 @@ struct PlantDetailsView: View {
             Spacer()
             
             Button(action: {
-                isSheetPresented = true
+                isAddingNewPlant = true
             }) {
                 HStack {
                     Image(systemName: "plus.circle.fill")
@@ -151,20 +169,21 @@ struct PlantDetailsView: View {
     }
 }
 
+// AllDoneView definition
 struct AllDoneView: View {
     var onNewReminder: () -> Void
 
     var body: some View {
         VStack(spacing: 10) {
-            Spacer() // لإبقاء المحتوى في المنتصف
+            Spacer()
             
-            Image("plant2") // تأكد من إضافة الصورة إلى الأصول
+            Image("plant2")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 240, height: 240)
-                .padding(.bottom, -20)
+                .frame(width: 250, height: 250)
+                .foregroundColor(.green)
                 .padding(.leading, -30)
-
+            
             Text("All Done! 🎉")
                 .font(.largeTitle)
                 .fontWeight(.bold)
@@ -172,54 +191,83 @@ struct AllDoneView: View {
             Text("All Reminders Completed")
                 .foregroundColor(.gray)
             
-            Spacer() // لإبقاء المحتوى في المنتصف
+            Spacer()
             
             Button(action: onNewReminder) {
                 HStack {
-                    
                     Image(systemName: "plus.circle.fill")
-                        .padding(.leading, -170)
                     Text("New Reminder")
-                        .padding(.leading, -150)
                 }
                 .font(.headline)
                 .foregroundColor(.green)
                 .padding()
             }
-            .padding(.bottom, 20)
         }
         .padding()
     }
 }
 
-struct NewRemindeسrSheet: View {
+// EditPlantSheet definition with custom inputs
+struct EditPlantSheet: View {
     @Environment(\.dismiss) var dismiss
-    
-    @State private var plantName: String = ""
-    @State private var selectedRoom: String = "Bedroom"
-    @State private var selectedLight: String = "Full Sun"
-    @State private var selectedWaterAmount: String = "20-50 ml"
-    
+    @State var plant: Plant
+
+    var onSave: (Plant) -> Void
+    var onDelete: () -> Void
+
     let rooms = ["Bedroom", "Bathroom", "Kitchen", "Living Room", "Balcony"]
     let lights = ["Full Sun", "Partial Sun", "Low Sun"]
     let waterAmounts = ["20-50 ml", "50-100 ml", "100-200 ml", "200-300 ml"]
-    
-    var onSave: (Plant) -> Void
-    
+    let wateringDays = ["Every Day", "Every 2 Days", "Every 3 Days", "Once a Week"]
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 20) {
-                TextField("Plant Name", text: $plantName)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding(.horizontal)
+                HStack {
+                    Text("Plant Name")
+                        .foregroundColor(.white)
+                        .font(.body)
+                    TextField("", text: $plant.name)
+                        .foregroundColor(.gray)
+                        .font(.body)
+                        .textFieldStyle(PlainTextFieldStyle())
+                }
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .cornerRadius(10)
+                .padding(.horizontal)
+
+                VStack(spacing: 0) {
+                    PickerSection(title: "Room", selection: $plant.room, options: rooms, icon: "location.fill")
+                        .padding(.leading, 8)
+                    Divider()
+                    PickerSection(title: "Light", selection: $plant.light, options: lights, icon: "sun.max.fill")
+                        .padding(.leading, 8)
+                }
+                .background(Color(.secondarySystemBackground))
+                .cornerRadius(10)
+                .padding(.horizontal, 16)
                 
-                PickerSection(title: "Room", selection: $selectedRoom, options: rooms, icon: "location.fill")
-                PickerSection(title: "Light", selection: $selectedLight, options: lights, icon: "sun.max.fill")
-                PickerSection(title: "Water Amount", selection: $selectedWaterAmount, options: waterAmounts, icon: "drop.fill")
-                
+                VStack(spacing: 0) {
+                    PickerSection(title: "Water", selection: $plant.waterAmount, options: waterAmounts, icon: "drop.fill")
+                        .padding(.leading, 8)
+                    Divider()
+                    PickerSection(title: "Watering Days", selection: .constant("Every 3 Days"), options: wateringDays, icon: "drop.fill")
+                        .padding(.leading, 8)
+                }
+                .background(Color(.secondarySystemBackground))
+                .cornerRadius(10)
+                .padding(.horizontal, 16)
+
                 Spacer()
+
+                Button("Delete Plant", role: .destructive) {
+                    onDelete()
+                    dismiss()
+                }
+                .padding()
             }
-            .navigationTitle("Set Reminder")
+            .navigationTitle("Edit Plant")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
@@ -229,8 +277,7 @@ struct NewRemindeسrSheet: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
-                        let newPlant = Plant(id: UUID(), name: plantName, room: selectedRoom, light: selectedLight, waterAmount: selectedWaterAmount)
-                        onSave(newPlant)
+                        onSave(plant)
                         dismiss()
                     }
                     .foregroundColor(.green)
@@ -240,7 +287,8 @@ struct NewRemindeسrSheet: View {
     }
 }
 
-struct PicسerSection: View {
+// Inline PickerSection View for Reusable Picker Components
+struct PickerSdection: View {
     let title: String
     @Binding var selection: String
     let options: [String]
@@ -261,8 +309,5 @@ struct PicسerSection: View {
             .pickerStyle(MenuPickerStyle())
         }
         .padding()
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(10)
-        .padding(.horizontal)
     }
 }
